@@ -1,6 +1,8 @@
 # 2048-React-CICD-devsecops — Setup Guide
 
-This README collects useful commands and links to install common DevOps, CI/CD and security tooling on Ubuntu systems. It has been cleaned up, organized and corrected for clarity. Always review commands for your environment and needs.
+This README collects useful commands and links to install common DevOps, CI/CD, and security tooling on Ubuntu systems. It has been cleaned up, organized, and corrected for clarity. Always review commands for your environment and needs.
+
+> **Note:** Replace all `<VERSION>`, `<your-server-ip>`, `<jenkins-ip>`, `<sonar-ip-address>`, `<ACCOUNT_ID>`, and similar placeholders with your actual values.
 
 ---
 
@@ -15,15 +17,16 @@ This README collects useful commands and links to install common DevOps, CI/CD a
 - [Prometheus](#prometheus)
 - [Node Exporter](#node-exporter)
 - [Grafana](#grafana)
-- [kubectl](#kubectl)
-- [Helm](#helm)
-- [eksctl](#eksctl)
+- [Jenkins Plugins to Install](#jenkins-plugins-to-install)
+- [Jenkins Credentials to Store](#jenkins-credentials-to-store)
+- [Jenkins Tools Configuration](#jenkins-tools-configuration)
+- [Jenkins System Configuration](#jenkins-system-configuration)
 - [EKS ALB Ingress Kubernetes Setup Guide](#eks-alb-ingress-kubernetes-setup-guide)
+- [Monitor Kubernetes with Prometheus](#monitor-kubernetes-with-prometheus)
+- [Installing Argo CD](#installing-argo-cd)
 - [Notes and Recommendations](#notes-and-recommendations)
 
 ---
-
-
 
 ## Ports to Enable in Security Group
 
@@ -37,6 +40,9 @@ This README collects useful commands and links to install common DevOps, CI/CD a
 | Prometheus      | 9090  |
 | Node Exporter   | 9100  |
 | Grafana         | 3000  |
+
+---
+
 ## Prerequisites
 
 This guide assumes an Ubuntu/Debian-like environment and sudo privileges.
@@ -145,7 +151,6 @@ Check Docker status:
 ```bash
 sudo systemctl status docker
 ```
-
 
 ---
 
@@ -257,7 +262,7 @@ Enable & start:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now node_exporter
-sudo systemctl start prometheus
+sudo systemctl start node_exporter
 sudo systemctl status node_exporter
 ```
 
@@ -373,15 +378,18 @@ Webhook example:
 
 ---
 
-sonarqube docker container run for analysis
+## SonarQube Docker Container Run for Analysis
+
+```bash
 docker run -d --name sonarqube \
   -p 9000:9000 \
   -v sonarqube_data:/opt/sonarqube/data \
   -v sonarqube_logs:/opt/sonarqube/logs \
   -v sonarqube_extensions:/opt/sonarqube/extensions \
   sonarqube:lts-community
+```
 
-
+---
 
 # EKS cluster setup and  ALB Ingress Kubernetes Setup Guide
 
@@ -432,7 +440,6 @@ echo 'complete -F __start_kubectl k' >> ~/.bashrc
 
 # Apply changes immediately
 source ~/.bashrc
-
 ```
 
 ---
@@ -518,8 +525,6 @@ eksctl create nodegroup \
   --nodes-max 6 \
   --node-type t3.medium
 ```
-
-
 
 ---
 
@@ -677,8 +682,6 @@ echo "ArgoCD admin password: $ARGOCD_PWD"
 
 ## Notes and Recommendations
 
-- Replace `<VERSION>` and `<your-server-ip>` placeholders with specific values for your setup.
+- Replace `<VERSION>`, `<your-server-ip>`, and other placeholders with specific values for your setup.
 - Prefer pinned versions for production environments rather than "latest".
-- Consult each project's official documentation for the most up-to-date instructions and security guidance.
-
----
+- Consult each project's official documentation for the most up-to
