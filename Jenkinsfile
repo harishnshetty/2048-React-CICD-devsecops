@@ -49,21 +49,7 @@ pipeline {
                 sh "npm install"
             }
         }
-        
-        // // https://nvd.nist.gov/developers/request-an-api-key  [request an API key]
-        // stage("OWASP FS Scan") {
-        //     steps {
-        //         dependencyCheck additionalArguments: '''
-        //             --scan ./ 
-        //             --disableYarnAudit 
-        //             --disableNodeAudit 
-        //             --nvdApiKey <api-key>
-        //             ''',
-        //         odcInstallation: 'dp-check'
 
-        //         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-        //     }
-        // }
         
         stage("OWASP FS Scan") {
             steps {
@@ -94,7 +80,7 @@ pipeline {
                     // Optional cleanup
                     sh "docker rmi -f 2048game ${env.IMAGE_TAG} || true"
 
-                    sh "docker build -t 2048game ."
+                    sh "docker build --no-cache -t 2048game ."
                 }
             }
         }

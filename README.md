@@ -428,22 +428,19 @@ sudo ./aws/install
 Refer: [kubectl Installation Guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 
 ```bash
-# Update and install required dependencies
 sudo apt-get update
+# apt-transport-https may be a dummy package; if so, you can skip that package
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
 
-# Add Kubernetes apt repo key
-sudo mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key \
-  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+# If the folder `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
+# sudo mkdir -p -m 755 /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg # allow unprivileged APT programs to read this keyring
 
-# Add Kubernetes apt repo
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' \
-  | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list
+# This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list   # helps tools such as command-not-found to work correctly
 
-# Update apt repo and install kubectl
 sudo apt-get update
 sudo apt-get install -y kubectl bash-completion
 
@@ -463,7 +460,7 @@ source ~/.bashrc
 Refer: [eksctl Installation Guide](https://eksctl.io/installation/)
 
 ```bash
-# For ARM systems, set ARCH to: arm64, armv6, or armv7
+# for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
 ARCH=amd64
 PLATFORM=$(uname -s)_$ARCH
 
@@ -498,7 +495,6 @@ Refer: [Helm Installation Guide](https://helm.sh/docs/intro/install/)
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
 sudo apt-get install apt-transport-https --yes
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-# Update and install Helm
 sudo apt-get update
 sudo apt-get install -y helm bash-completion
 
@@ -533,8 +529,8 @@ eksctl create cluster \
 
 eksctl create nodegroup \
   --cluster my-cluster \
-  --name my-nodes \
-  --nodes 3 \
+  --name my-nodes-ng \
+  --nodes 2 \
   --nodes-min 2 \
   --nodes-max 6 \
   --node-type t3.medium
@@ -619,10 +615,14 @@ kubectl get deployment -n kube-system aws-load-balancer-controller
 ## 12. Create and Set Namespace for Your Application
 
 ```bash
-kubectl apply -f namespace.yml
-kubectl apply -f deployment.yml
-kubectl apply -f ingress-alb-80-without-acm.yml
-kubectl config set-context --current --namespace=store-ns
+
+git clone https://github.com/harishnshetty/2048-React-CICD-devsecops.git
+cd 2048-React-CICD-devsecops/k8s/
+
+kubectl apply -f .
+kubectl config set-context --current --namespace=game-ns
+kubectl get ingress -w
+kubectl delete -f .
 ```
 
 ---
@@ -656,7 +656,7 @@ Add to `/etc/prometheus/prometheus.yml`:
 Validate config:
 ```bash
 promtool check config /etc/prometheus/prometheus.yml
-curl -X POST http://localhost:9090/-/reload
+sudo systemctl restart  prometheus.service
 ```
 
 ---
