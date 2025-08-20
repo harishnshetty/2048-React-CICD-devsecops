@@ -8,18 +8,86 @@ Table of contents
 - Java
 - Jenkins
 - Docker
-- Docker Scout
 - Trivy
 - Prometheus
 - Node Exporter
 - Grafana
 - kubectl
 - Helm
-- Gitleaks
 - eksctl
-- Terraform
+
 
 ---
+plugins need to install on jenkins
+
+Prometheus metrics plugin
+Docker API Plugin
+Docker Commons Plugin
+Docker Pipeline
+Docker plugin
+docker-build-step
+Eclipse Temurin installer Plugin
+Email Extension Plugin
+OWASP Dependency-Check Plugin
+Pipeline: Stage View Plugin
+SonarQube Scanner for Jenkins
+
+
+Ports need to enable in the SG
+ssh                     22
+sonarqube               9000
+promethues              9090
+node_exporter           9100
+grafana                 3000
+http                    80
+https                   443
+
+-------------credational to store
+
+               ID 
+mail           mail-cred         username and app password
+sonarqube      sonar-token       secret text (take from the sonarqube application) 
+docker         docker-cred       secret text (take from your docker hub profile)
+
+http://<jenkins-ip>:8080/sonarqube-webhook/  
+
+---tools configuration
+jdk
+node
+SonarQube Scanner installations
+Maven installations
+Dependency-Check installations
+Docker installations
+
+
+
+--- system configuation
+SonarQube servers   
+Name:   sonar-server
+url:    http://10.59.10.239:9000
+cred-add
+
+Extended E-mail Notification
+SMTP server                     smtp.gmail.com
+SMTP Port                       465
+                                Use SSL
+Default user e-mail suffix      @gmail.com
+
+
+E-mail Notification
+SMTP server                     smtp.gmail.com
+Default user e-mail suffix      @gmail.com
+advanced
+Use SMTP Authentication
+User Name                       example@gmail.com
+password-credations
+                                Use TLS
+SMTP Port                       587
+Reply-To Address                example@gmail.com    
+
+
+
+
 
 ## Prerequisites
 This guide assumes an Ubuntu/Debian-like environment and sudo privileges.
@@ -36,6 +104,16 @@ Reload bash completion if needed:
 ```bash
 source /etc/bash_completion
 ```
+
+
+
+# apt-get install git
+For Ubuntu, this PPA provides the latest stable upstream Git version
+
+# add-apt-repository ppa:git-core/ppa
+# apt update; apt install git
+
+
 
 ## Java
 Install OpenJDK (choose 17 or 21 depending on your needs / application requirements):
@@ -233,6 +311,27 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now node_exporter
 sudo systemctl status node_exporter
 ```
+nano /etc/prometheus/prometheus.yml
+
+ - job_name: "node_exporter"
+    static_configs:
+      - targets: ["10.59.10.239:9100"]
+
+  - job_name: "jenkins"
+    metrics_path: /prometheus
+    static_configs:
+      - targets: ["10.59.10.239:8080"]
+
+
+promtool check config /etc/prometheus/prometheus.yml
+
+curl -X POST http://localhost:9090/-/reload
+
+
+
+ 
+
+
 In Prometheus config add the target (port 9100) for the node exporter.
 
 ## Grafana
@@ -253,87 +352,277 @@ sudo apt-get install -y grafana
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now grafana-server
+sudo systemctl start grafana-server
 sudo systemctl status grafana-server
 ```
 Access: http://<your-server-ip>:3000
 
-## kubectl
-Docs: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 
-Example (using official apt repo for kubectl):
+
+
+
+
+
+# EKS ALB Ingress Kubernetes Setup Guide
+
+This guide covers the step-by-step installation and setup process for AWS CLI, `kubectl`, `eksctl`, and `helm`, along with instructions to create and configure an EKS cluster with AWS Load Balancer Controller.
+
+---
+
+## 1. AWS CLI Installation
+
+Refer: [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+```
+
+---
+
+## 2. kubectl Installation
+git 
+Refer: [kubectl Installation Guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
+
 ```bash
 sudo apt-get update
+# apt-transport-https may be a dummy package; if so, you can skip that package
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
-
-sudo mkdir -p /etc/apt/keyrings
+    
+  # If the folder `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
+# sudo mkdir -p -m 755 /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg # allow unprivileged APT programs to read this keyring
 
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | \
-  sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list   # helps tools such as command-not-found to work correctly
 
 sudo apt-get update
 sudo apt-get install -y kubectl
 ```
 
-## Helm
-Docs: https://helm.sh/docs/intro/install/
+---
 
-Install via apt:
+## 3. eksctl Installation
+
+Refer: [eksctl Installation Guide](https://eksctl.io/installation/)
+
 ```bash
-curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
-sudo apt-get install -y apt-transport-https
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | \
-  sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-sudo apt-get update
-sudo apt-get install -y helm
-```
-
-## Gitleaks
-Repo: https://github.com/gitleaks/gitleaks
-
-Run with Docker:
-```bash
-docker run --rm -v "$(pwd)":/path zricethezav/gitleaks:latest \
-  detect --source=/path --report-path=/path/gitleaks-report.json --exit-code 1
-```
-Install binary (example):
-```bash
-sudo curl -sSL "https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(uname -s)_$(uname -m).tar.gz" -o /tmp/gitleaks.tar.gz
-sudo tar -xzf /tmp/gitleaks.tar.gz -C /tmp
-sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
-sudo chmod +x /usr/local/bin/gitleaks
-gitleaks version
-```
-Example pipeline stage:
-```groovy
-sh 'gitleaks detect --source . --report-path=gitleaks-report.json --exit-code 1'
-```
-
-## eksctl
-Docs: https://eksctl.io/installation/
-
-Example:
-```bash
+# For ARM systems, set ARCH to: arm64, armv6, or armv7
 ARCH=amd64
 PLATFORM=$(uname -s)_$ARCH
 
-curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_${PLATFORM}.tar.gz"
-tar -xzf eksctl_${PLATFORM}.tar.gz -C /tmp && rm eksctl_${PLATFORM}.tar.gz
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+
+# (Optional) Verify checksum
+curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+
+tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+
 sudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl
 ```
 
-## Terraform
-Docs: https://developer.hashicorp.com/terraform/install
+---
 
-Example (HashiCorp apt repo):
+## 4. Helm Installation
+
+Refer: [Helm Installation Guide](https://helm.sh/docs/intro/install/)
+
 ```bash
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
-  sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update
-sudo apt install -y terraform
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+sudo apt-get install apt-transport-https --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
 ```
+
+---
+
+## 5. AWS CLI Configuration
+
+```bash
+aws configure
+```
+```bash
+aws configure list
+```
+---
+
+## 6. Create EKS Cluster and Nodegroup
+
+```bash
+eksctl create cluster \
+  --name my-cluster \
+  --region ap-south-1 \
+  --version 1.33 \
+  --without-nodegroup
+
+eksctl create nodegroup \
+  --cluster my-cluster \
+  --name my-nodes \
+  --nodes 3 \
+  --nodes-min 2 \
+  --nodes-max 6 \
+  --node-type t3.medium
+```
+
+---
+
+## 7. Update kubeconfig
+
+```bash
+aws eks update-kubeconfig --name my-cluster --region ap-south-1
+```
+
+---
+
+## 8. Associate IAM OIDC Provider
+
+```bash
+eksctl utils associate-iam-oidc-provider --cluster my-cluster --approve
+```
+
+---
+
+## 9. Create IAM Policy for AWS Load Balancer Controller
+
+	link for new updated policy----->	https://docs.aws.amazon.com/eks/latest/userguide/lbc-manifest.html
+
+```bash
+curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.13.3/docs/install/iam_policy.json
+
+aws iam create-policy \
+  --policy-name AWSLoadBalancerControllerIAMPolicy \
+  --policy-document file://iam_policy.json
+```
+
+---
+
+## 10. Create IAM Service Account
+
+Replace `<ACCOUNT_ID>` with your AWS account ID.
+
+```bash
+eksctl create iamserviceaccount \
+  --cluster=my-cluster \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::<ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --region ap-south-1 \
+  --approve
+```
+
+---
+
+## 11. Install AWS Load Balancer Controller via Helm
+
+```bash
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update eks
+
+
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system \
+  --set clusterName=my-cluster \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=ap-south-1 \
+  --version 1.13.3
+```
+
+**Optional:** List available versions of the chart
+
+
+
+```bash
+helm search repo eks/aws-load-balancer-controller --versions
+```
+
+
+```bash
+helm list -A
+```
+
+**Verify installation:**
+
+```bash
+kubectl get deployment -n kube-system aws-load-balancer-controller
+```
+
+
+
+---
+
+## 12. Create and Set Namespace for Your Application
+
+```bash
+kubectl apply -f namespace.yml
+kubectl apply -f deployment.yml
+kubectl apply -f ingress-alb-80-without-acm.yml
+kubectl config set-context --current --namespace=store-ns
+```
+
+---
+
+
+ 
+## 13. Delete EKS Cluster (Cleanup)   [stop here if you tired ]
+
+```bash
+eksctl delete cluster --name my-cluster --region ap-south-1
+```
+
+
+
+Monitor Kubernetes with Prometheus
+Install Node Exporter using Helm
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+kubectl create namespace prometheus-node-exporter
+
+helm install prometheus-node-exporter prometheus-community/prometheus-node-exporter --namespace prometheus-node-exporter
+nano /etc/prometheus/prometheus.yml
+
+  - job_name: 'k8s'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['node1Ip:9100']
+
+
+promtool check config /etc/prometheus/prometheus.yml
+
+curl -X POST http://localhost:9090/-/reload
+
+
+
+Installing Argo CD              https://www.eksworkshop.com/docs/automation/gitops/argocd/access_argocd
+
+
+helm repo add argo-cd https://argoproj.github.io/argo-helm
+helm upgrade --install argocd argo-cd/argo-cd --version "${ARGOCD_CHART_VERSION}" \
+  --namespace "argocd" --create-namespace \
+  --values ~/environment/eks-workshop/modules/automation/gitops/argocd/values.yaml \
+  --wait
+
+
+export ARGOCD_SERVER=$(kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')
+echo "ArgoCD URL: https://$ARGOCD_SERVER"
+
+The load balancer will take some time to provision. Use this command to wait until ArgoCD responds:
+
+curl --head -X GET --retry 20 --retry-all-errors --retry-delay 15 \
+  --connect-timeout 5 --max-time 10 -k \
+  https://$ARGOCD_SERVER
+
+
+For authentication, the default username is admin and the password is auto-generated. Retrieve the password with the following command:
+
+export ARGOCD_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+echo "ArgoCD admin password: $ARGOCD_PWD"
+
 
 ---
 
@@ -341,5 +630,38 @@ Notes and recommendations
 - Replace `<VERSION>` and `<your-server-ip>` placeholders with the specific version or IP you intend to use.
 - Where the guide uses "latest" downloads, prefer pinned versions for production environments.
 - Check each project's official documentation pages linked above for the most up-to-date installation instructions, supported versions, and security guidance.
+
+
+
+## 13. Delete EKS Cluster (Cleanup)
+
+```bash
+eksctl delete cluster --name my-cluster --region ap-south-1
+```
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```
