@@ -36,6 +36,8 @@ pipeline {
         stage("Quality Gate") {
             steps {
                 script {
+                    timeout(time: 3, unit: 'MINUTES') {
+                  
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
                 }
             }
@@ -47,29 +49,20 @@ pipeline {
             }
         }
         
-        // stage("OWASP FS Scan") {
-        //     steps {
-        //         dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit',
-        //                         odcInstallation: 'dp-check'
-        //         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-        //     }
-        // }  
-
-
         // https://nvd.nist.gov/developers/request-an-api-key  [request an API key]
-        // stage("OWASP FS Scan") {
-        //     steps {
-        //         dependencyCheck additionalArguments: '''
-        //             --scan ./ 
-        //             --disableYarnAudit 
-        //             --disableNodeAudit 
-        //             --nvdApiKey <api-key>
-        //             ''',
-        //         odcInstallation: 'dp-check'
+        stage("OWASP FS Scan") {
+            steps {
+                dependencyCheck additionalArguments: '''
+                    --scan ./ 
+                    --disableYarnAudit 
+                    --disableNodeAudit 
+                    --nvdApiKey <api-key>
+                    ''',
+                odcInstallation: 'dp-check'
 
-        //         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-        //     }
-        // }
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
         
         stage("OWASP FS Scan") {
             steps {

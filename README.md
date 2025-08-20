@@ -67,7 +67,7 @@ source /etc/bash_completion
 ```bash
 sudo add-apt-repository ppa:git-core/ppa
 sudo apt update
-sudo apt install git
+sudo apt install git -y
 ```
 
 ---
@@ -95,22 +95,23 @@ java --version
 Official docs: https://www.jenkins.io/doc/book/installing/linux/
 
 ```bash
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo gpg --dearmor -o /etc/apt/keyrings/jenkins-keyring.asc
-
-echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | \
-  sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
 
 sudo apt update
 sudo apt install -y jenkins
 sudo systemctl enable --now jenkins
+sudo systemctl start jenkins
 sudo systemctl status jenkins
 ```
 Initial admin password:
 ```bash
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
-Then open: http://<your-server-ip>:8080
+Then open: http://your-server-ip:8080
 
 **Note:** Jenkins requires a compatible Java runtime. Check the Jenkins documentation for supported Java versions.
 
@@ -121,21 +122,21 @@ Then open: http://<your-server-ip>:8080
 Official docs: https://docs.docker.com/engine/install/ubuntu/
 
 ```bash
-sudo apt update
-sudo apt install -y ca-certificates curl
-
-# Prepare keyrings dir
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.asc
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
+# Add the repository to Apt sources:
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
 
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Add user to docker group (log out / in or newgrp to apply)
 sudo usermod -aG docker $USER
@@ -156,16 +157,15 @@ sudo systemctl status docker
 
 ## Trivy (Vulnerability Scanner)
 
-Docs: https://trivy.dev/getting-started/installation/
+Docs: https://trivy.dev/v0.65/getting-started/installation/
 
 ```bash
-sudo apt-get install -y wget apt-transport-https gnupg
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | \
-  sudo tee /etc/apt/sources.list.d/trivy.list
-
+sudo apt-get install wget apt-transport-https gnupg lsb-release
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
 sudo apt-get update
 sudo apt-get install -y trivy
+
 
 trivy --version
 ```
@@ -181,7 +181,7 @@ Official downloads: https://prometheus.io/download/
 # Create a prometheus user
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin prometheus
 
-wget -O prometheus.tar.gz "https://github.com/prometheus/prometheus/releases/download/<VERSION>/prometheus-<VERSION>.linux-amd64.tar.gz"
+wget -O prometheus.tar.gz "https://github.com/prometheus/prometheus/releases/download/v3.5.0/prometheus-3.5.0.linux-amd64.tar.gz"
 tar -xvf prometheus.tar.gz
 cd prometheus-*/
 
@@ -225,7 +225,7 @@ sudo systemctl enable --now prometheus
 sudo systemctl start prometheus
 sudo systemctl status prometheus
 ```
-Access: http://<your-server-ip>:9090
+Access: http://ip-address:9090
 
 ---
 
@@ -236,7 +236,7 @@ Docs: https://prometheus.io/docs/guides/node-exporter/
 ```bash
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin node_exporter
 
-wget -O node_exporter.tar.gz "https://github.com/prometheus/node_exporter/releases/download/<VERSION>/node_exporter-<VERSION>.linux-amd64.tar.gz"
+wget -O node_exporter.tar.gz "https://github.com/prometheus/node_exporter/releases/download/v1.9.1/node_exporter-1.9.1.linux-amd64.tar.gz"
 tar -xvf node_exporter.tar.gz
 sudo mv node_exporter-*/node_exporter /usr/local/bin/
 rm -rf node_exporter*
@@ -282,7 +282,7 @@ Add to `/etc/prometheus/prometheus.yml`:
 Validate config:
 ```bash
 promtool check config /etc/prometheus/prometheus.yml
-curl -X POST http://localhost:9090/-/reload
+sudo systemctl restart prometheus
 ```
 
 ---
@@ -294,11 +294,10 @@ Docs: https://grafana.com/docs/grafana/latest/setup-grafana/installation/debian/
 ```bash
 sudo apt-get install -y apt-transport-https software-properties-common wget
 
-sudo mkdir -p /etc/apt/keyrings
+sudo mkdir -p /etc/apt/keyrings/
 wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
 
-echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | \
-  sudo tee /etc/apt/sources.list.d/grafana.list
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
 
 sudo apt-get update
 sudo apt-get install -y grafana
@@ -308,9 +307,20 @@ sudo systemctl enable --now grafana-server
 sudo systemctl start grafana-server
 sudo systemctl status grafana-server
 ```
-Access: http://<your-server-ip>:3000
+Access: http://ip-address:3000
 
 ---
+
+Datasource: http://promethues-ip:9090
+
+## Dashboard id 
+Docs: https://grafana.com/grafana/dashboards/1860-node-exporter-full/
+Docs: https://grafana.com/grafana/dashboards/9964-jenkins-performance-and-health-overview/
+Docs: https://grafana.com/grafana/dashboards/18283-kubernetes-dashboard/
+
+Node_exporter : 1860
+jenkins       : 9964
+K8s           : 18283
 
 ## Jenkins Plugins to Install
 
@@ -326,6 +336,18 @@ Access: http://<your-server-ip>:3000
 - Docker Pipeline
 - Docker plugin
 - docker-build-step
+
+---
+## SonarQube Docker Container Run for Analysis
+
+```bash
+docker run -d --name sonarqube \
+  -p 9000:9000 \
+  -v sonarqube_data:/opt/sonarqube/data \
+  -v sonarqube_logs:/opt/sonarqube/logs \
+  -v sonarqube_extensions:/opt/sonarqube/extensions \
+  sonarqube:lts-community
+```
 
 ---
 
@@ -345,10 +367,11 @@ Webhook example:
 ## Jenkins Tools Configuration
 
 - JDK
+- SonarQube Scanner installations [sonar-scanner]
 - Node
-- SonarQube Scanner installations
+- Dependency-Check installations [dp-check]
 - Maven installations
-- Dependency-Check installations
+
 - Docker installations
 
 ---
@@ -377,19 +400,10 @@ Webhook example:
 - Reply-To Address: example@gmail.com
 
 ---
+# Now See the configuration pipeline of the jenkins
 
-## SonarQube Docker Container Run for Analysis
 
-```bash
-docker run -d --name sonarqube \
-  -p 9000:9000 \
-  -v sonarqube_data:/opt/sonarqube/data \
-  -v sonarqube_logs:/opt/sonarqube/logs \
-  -v sonarqube_extensions:/opt/sonarqube/extensions \
-  sonarqube:lts-community
-```
 
----
 
 # EKS cluster setup and  ALB Ingress Kubernetes Setup Guide
 
