@@ -11,7 +11,6 @@ This README collects useful commands and links to install common DevOps, CI/CD a
 - [Java](#java)
 - [Jenkins](#jenkins)
 - [Docker](#docker)
-- [Docker Scout](#docker-scout)
 - [Trivy](#trivy-vulnerability-scanner)
 - [Prometheus](#prometheus)
 - [Node Exporter](#node-exporter)
@@ -133,25 +132,6 @@ Check Docker status:
 sudo systemctl status docker
 ```
 
----
-
-## Docker Scout
-
-Docs: https://github.com/docker/scout-cli
-
-```bash
-docker login   # provide Docker Hub credentials
-
-mkdir -p ~/.docker/cli-plugins
-
-curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
-sh install-scout.sh
-
-# Or via pipe
-curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
-
-docker scout version
-```
 
 ---
 
@@ -223,6 +203,7 @@ WantedBy=multi-user.target
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now prometheus
+sudo systemctl start prometheus
 sudo systemctl status prometheus
 ```
 Access: http://<your-server-ip>:9090
@@ -262,6 +243,7 @@ Enable & start:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now node_exporter
+sudo systemctl start prometheus
 sudo systemctl status node_exporter
 ```
 
@@ -271,12 +253,12 @@ Add to `/etc/prometheus/prometheus.yml`:
 ```yaml
   - job_name: "node_exporter"
     static_configs:
-      - targets: ["10.59.10.239:9100"]
+      - targets: ["<ip-address>:9100"]
 
   - job_name: "jenkins"
     metrics_path: /prometheus
     static_configs:
-      - targets: ["10.59.10.239:8080"]
+      - targets: ["<jenkins-ip>:8080"]
 ```
 Validate config:
 ```bash
@@ -313,17 +295,18 @@ Access: http://<your-server-ip>:3000
 
 ## Jenkins Plugins to Install
 
+- Eclipse Temurin installer Plugin
+- NodeJS
+- Email Extension Plugin
+- OWASP Dependency-Check Plugin
+- Pipeline: Stage View Plugin
+- SonarQube Scanner for Jenkins
 - Prometheus metrics plugin
 - Docker API Plugin
 - Docker Commons Plugin
 - Docker Pipeline
 - Docker plugin
 - docker-build-step
-- Eclipse Temurin installer Plugin
-- Email Extension Plugin
-- OWASP Dependency-Check Plugin
-- Pipeline: Stage View Plugin
-- SonarQube Scanner for Jenkins
 
 ---
 
@@ -369,7 +352,7 @@ Webhook example:
 
 **SonarQube servers:**   
 - Name: sonar-server  
-- URL: http://10.59.10.239:9000  
+- URL: http://<sonar-ip-address>:9000  
 - Credentials: Add from Jenkins credentials
 
 **Extended E-mail Notification:**
@@ -390,7 +373,7 @@ Webhook example:
 
 ---
 
-# EKS ALB Ingress Kubernetes Setup Guide
+# EKS cluster setup and  ALB Ingress Kubernetes Setup Guide
 
 This guide covers the installation and setup for AWS CLI, `kubectl`, `eksctl`, and `helm`, and creating/configuring an EKS cluster with AWS Load Balancer Controller.
 
@@ -413,19 +396,33 @@ sudo ./aws/install
 Refer: [kubectl Installation Guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 
 ```bash
+# Update and install required dependencies
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
 
-# If the folder `/etc/apt/keyrings` does not exist:
+# Add Kubernetes apt repo key
 sudo mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+# Add Kubernetes apt repo
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' \
+  | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list
 
+# Update apt repo and install kubectl
 sudo apt-get update
-sudo apt-get install -y kubectl
+sudo apt-get install -y kubectl bash-completion
+
+# Enable kubectl auto-completion
+echo 'source <(kubectl completion bash)' >> ~/.bashrc
+echo 'alias k=kubectl' >> ~/.bashrc
+echo 'complete -F __start_kubectl k' >> ~/.bashrc
+
+# Apply changes immediately
+source ~/.bashrc
+
 ```
 
 ---
@@ -447,6 +444,17 @@ curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_ch
 tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
 
 sudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl
+
+# Install bash completion
+sudo apt-get install -y bash-completion
+
+# Enable eksctl auto-completion
+echo 'source <(eksctl completion bash)' >> ~/.bashrc
+echo 'alias e=eksctl' >> ~/.bashrc
+echo 'complete -F __start_eksctl e' >> ~/.bashrc
+
+# Apply changes immediately
+source ~/.bashrc
 ```
 
 ---
@@ -459,8 +467,17 @@ Refer: [Helm Installation Guide](https://helm.sh/docs/intro/install/)
 curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
 sudo apt-get install apt-transport-https --yes
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+# Update and install Helm
 sudo apt-get update
-sudo apt-get install helm
+sudo apt-get install -y helm bash-completion
+
+# Enable Helm auto-completion
+echo 'source <(helm completion bash)' >> ~/.bashrc
+echo 'alias h=helm' >> ~/.bashrc
+echo 'complete -F __start_helm h' >> ~/.bashrc
+
+# Apply changes immediately
+source ~/.bashrc
 ```
 
 ---
