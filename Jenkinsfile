@@ -50,20 +50,20 @@ pipeline {
             }
         }
         
-        // https://nvd.nist.gov/developers/request-an-api-key  [request an API key]
-        stage("OWASP FS Scan") {
-            steps {
-                dependencyCheck additionalArguments: '''
-                    --scan ./ 
-                    --disableYarnAudit 
-                    --disableNodeAudit 
-                    --nvdApiKey <api-key>
-                    ''',
-                odcInstallation: 'dp-check'
+        // // https://nvd.nist.gov/developers/request-an-api-key  [request an API key]
+        // stage("OWASP FS Scan") {
+        //     steps {
+        //         dependencyCheck additionalArguments: '''
+        //             --scan ./ 
+        //             --disableYarnAudit 
+        //             --disableNodeAudit 
+        //             --nvdApiKey <api-key>
+        //             ''',
+        //         odcInstallation: 'dp-check'
 
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
+        //         dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+        //     }
+        // }
         
         stage("OWASP FS Scan") {
             steps {
