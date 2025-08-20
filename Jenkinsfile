@@ -42,6 +42,7 @@ pipeline {
                 }
             }
         }
+        }
 
         stage("Install NPM Dependencies") {
             steps {
