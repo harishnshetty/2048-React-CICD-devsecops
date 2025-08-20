@@ -1,98 +1,37 @@
 # 2048-React-CICD-devsecops — Setup Guide
 
-This README collects useful commands and links to install common DevOps, CI/CD and security tooling on Ubuntu systems. It has been cleaned up, organized and corrected for clarity. Always review commands before running them and check official product docs for the latest versions.
-
-Table of contents
-- Prerequisites
-- System update & common packages
-- Java
-- Jenkins
-- Docker
-- Trivy
-- Prometheus
-- Node Exporter
-- Grafana
-- kubectl
-- Helm
-- eksctl
-
+This README collects useful commands and links to install common DevOps, CI/CD and security tooling on Ubuntu systems. It has been cleaned up, organized and corrected for clarity. Always review commands for your environment and needs.
 
 ---
-plugins need to install on jenkins
 
-Prometheus metrics plugin
-Docker API Plugin
-Docker Commons Plugin
-Docker Pipeline
-Docker plugin
-docker-build-step
-Eclipse Temurin installer Plugin
-Email Extension Plugin
-OWASP Dependency-Check Plugin
-Pipeline: Stage View Plugin
-SonarQube Scanner for Jenkins
+## Table of Contents
 
+- [Prerequisites](#prerequisites)
+- [System Update & Common Packages](#system-update--common-packages)
+- [Java](#java)
+- [Jenkins](#jenkins)
+- [Docker](#docker)
+- [Docker Scout](#docker-scout)
+- [Trivy](#trivy-vulnerability-scanner)
+- [Prometheus](#prometheus)
+- [Node Exporter](#node-exporter)
+- [Grafana](#grafana)
+- [kubectl](#kubectl)
+- [Helm](#helm)
+- [eksctl](#eksctl)
+- [EKS ALB Ingress Kubernetes Setup Guide](#eks-alb-ingress-kubernetes-setup-guide)
+- [Notes and Recommendations](#notes-and-recommendations)
 
-Ports need to enable in the SG
-ssh                     22
-sonarqube               9000
-promethues              9090
-node_exporter           9100
-grafana                 3000
-http                    80
-https                   443
-
--------------credational to store
-
-               ID 
-mail           mail-cred         username and app password
-sonarqube      sonar-token       secret text (take from the sonarqube application) 
-docker         docker-cred       secret text (take from your docker hub profile)
-
-http://<jenkins-ip>:8080/sonarqube-webhook/  
-
----tools configuration
-jdk
-node
-SonarQube Scanner installations
-Maven installations
-Dependency-Check installations
-Docker installations
-
-
-
---- system configuation
-SonarQube servers   
-Name:   sonar-server
-url:    http://10.59.10.239:9000
-cred-add
-
-Extended E-mail Notification
-SMTP server                     smtp.gmail.com
-SMTP Port                       465
-                                Use SSL
-Default user e-mail suffix      @gmail.com
-
-
-E-mail Notification
-SMTP server                     smtp.gmail.com
-Default user e-mail suffix      @gmail.com
-advanced
-Use SMTP Authentication
-User Name                       example@gmail.com
-password-credations
-                                Use TLS
-SMTP Port                       587
-Reply-To Address                example@gmail.com    
-
-
-
-
+---
 
 ## Prerequisites
+
 This guide assumes an Ubuntu/Debian-like environment and sudo privileges.
 
-## System update & common packages
+---
+
+## System Update & Common Packages
+
 ```bash
 sudo apt update
 sudo apt upgrade -y
@@ -105,23 +44,24 @@ Reload bash completion if needed:
 source /etc/bash_completion
 ```
 
+**Install latest Git:**
+```bash
+sudo add-apt-repository ppa:git-core/ppa
+sudo apt update
+sudo apt install git
+```
 
-
-# apt-get install git
-For Ubuntu, this PPA provides the latest stable upstream Git version
-
-# add-apt-repository ppa:git-core/ppa
-# apt update; apt install git
-
-
+---
 
 ## Java
-Install OpenJDK (choose 17 or 21 depending on your needs / application requirements):
+
+Install OpenJDK (choose 17 or 21 depending on your needs):
+
 ```bash
-# Option 1: OpenJDK 17
+# OpenJDK 17
 sudo apt install -y openjdk-17-jdk
 
-# Option 2: OpenJDK 21
+# OR OpenJDK 21
 sudo apt install -y openjdk-21-jdk
 ```
 Verify:
@@ -129,10 +69,12 @@ Verify:
 java --version
 ```
 
+---
+
 ## Jenkins
+
 Official docs: https://www.jenkins.io/doc/book/installing/linux/
 
-Example for Debian/Ubuntu (uses the jenkins package signing key and repository):
 ```bash
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo gpg --dearmor -o /etc/apt/keyrings/jenkins-keyring.asc
@@ -151,12 +93,14 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 Then open: http://<your-server-ip>:8080
 
-Note: Jenkins requires a compatible Java runtime. Check the Jenkins documentation for supported Java versions.
+**Note:** Jenkins requires a compatible Java runtime. Check the Jenkins documentation for supported Java versions.
+
+---
 
 ## Docker
+
 Official docs: https://docs.docker.com/engine/install/ubuntu/
 
-Quick install (official Docker repository):
 ```bash
 sudo apt update
 sudo apt install -y ca-certificates curl
@@ -179,7 +123,7 @@ sudo usermod -aG docker $USER
 newgrp docker
 docker ps
 ```
-If Jenkins needs Docker access, also add the jenkins user:
+If Jenkins needs Docker access:
 ```bash
 sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
@@ -189,10 +133,12 @@ Check Docker status:
 sudo systemctl status docker
 ```
 
+---
+
 ## Docker Scout
+
 Docs: https://github.com/docker/scout-cli
 
-Install via install script:
 ```bash
 docker login   # provide Docker Hub credentials
 
@@ -201,16 +147,18 @@ mkdir -p ~/.docker/cli-plugins
 curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
 sh install-scout.sh
 
-# or via pipe
+# Or via pipe
 curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
 
 docker scout version
 ```
 
-## Trivy (vulnerability scanner)
+---
+
+## Trivy (Vulnerability Scanner)
+
 Docs: https://trivy.dev/getting-started/installation/
 
-Install via apt repo:
 ```bash
 sudo apt-get install -y wget apt-transport-https gnupg
 wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
@@ -223,15 +171,17 @@ sudo apt-get install -y trivy
 trivy --version
 ```
 
+---
+
 ## Prometheus
+
 Official downloads: https://prometheus.io/download/
 
-Generic install steps (use the current release from the Prometheus download page):
+**Generic install steps:**
 ```bash
 # Create a prometheus user
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin prometheus
 
-# Download the release and extract (replace URL with the latest)
 wget -O prometheus.tar.gz "https://github.com/prometheus/prometheus/releases/download/<VERSION>/prometheus-<VERSION>.linux-amd64.tar.gz"
 tar -xvf prometheus.tar.gz
 cd prometheus-*/
@@ -243,7 +193,9 @@ sudo mv prometheus.yml /etc/prometheus/prometheus.yml
 
 sudo chown -R prometheus:prometheus /etc/prometheus /data
 ```
-Systemd service (`/etc/systemd/system/prometheus.service`):
+
+**Systemd service** (`/etc/systemd/system/prometheus.service`):
+
 ```ini
 [Unit]
 Description=Prometheus
@@ -266,7 +218,8 @@ ExecStart=/usr/local/bin/prometheus \
 [Install]
 WantedBy=multi-user.target
 ```
-Enable & start:
+
+**Enable & start:**
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now prometheus
@@ -274,10 +227,12 @@ sudo systemctl status prometheus
 ```
 Access: http://<your-server-ip>:9090
 
+---
+
 ## Node Exporter
+
 Docs: https://prometheus.io/docs/guides/node-exporter/
 
-Example:
 ```bash
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin node_exporter
 
@@ -285,10 +240,8 @@ wget -O node_exporter.tar.gz "https://github.com/prometheus/node_exporter/releas
 tar -xvf node_exporter.tar.gz
 sudo mv node_exporter-*/node_exporter /usr/local/bin/
 rm -rf node_exporter*
-
-# systemd service: /etc/systemd/system/node_exporter.service
 ```
-Service file:
+**Systemd service:** (`/etc/systemd/system/node_exporter.service`)
 ```ini
 [Unit]
 Description=Node Exporter
@@ -311,9 +264,12 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now node_exporter
 sudo systemctl status node_exporter
 ```
-nano /etc/prometheus/prometheus.yml
 
- - job_name: "node_exporter"
+**Prometheus scrape config:**
+
+Add to `/etc/prometheus/prometheus.yml`:
+```yaml
+  - job_name: "node_exporter"
     static_configs:
       - targets: ["10.59.10.239:9100"]
 
@@ -321,23 +277,19 @@ nano /etc/prometheus/prometheus.yml
     metrics_path: /prometheus
     static_configs:
       - targets: ["10.59.10.239:8080"]
-
-
+```
+Validate config:
+```bash
 promtool check config /etc/prometheus/prometheus.yml
-
 curl -X POST http://localhost:9090/-/reload
+```
 
-
-
- 
-
-
-In Prometheus config add the target (port 9100) for the node exporter.
+---
 
 ## Grafana
+
 Docs: https://grafana.com/docs/grafana/latest/setup-grafana/installation/debian/
 
-Quick install:
 ```bash
 sudo apt-get install -y apt-transport-https software-properties-common wget
 
@@ -357,15 +309,90 @@ sudo systemctl status grafana-server
 ```
 Access: http://<your-server-ip>:3000
 
+---
 
+## Jenkins Plugins to Install
 
+- Prometheus metrics plugin
+- Docker API Plugin
+- Docker Commons Plugin
+- Docker Pipeline
+- Docker plugin
+- docker-build-step
+- Eclipse Temurin installer Plugin
+- Email Extension Plugin
+- OWASP Dependency-Check Plugin
+- Pipeline: Stage View Plugin
+- SonarQube Scanner for Jenkins
 
+---
 
+## Ports to Enable in Security Group
 
+| Service         | Port  |
+|-----------------|-------|
+| SSH             | 22    |
+| SonarQube       | 9000  |
+| Prometheus      | 9090  |
+| Node Exporter   | 9100  |
+| Grafana         | 3000  |
+| HTTP            | 80    |
+| HTTPS           | 443   |
+
+---
+
+## Jenkins Credentials to Store
+
+| Purpose       | ID            | Type          | Notes                               |
+|---------------|---------------|---------------|-------------------------------------|
+| Email         | mail-cred     | Username/app password |                                  |
+| SonarQube     | sonar-token   | Secret text   | From SonarQube application         |
+| Docker Hub    | docker-cred   | Secret text   | From your Docker Hub profile       |
+
+Webhook example:  
+`http://<jenkins-ip>:8080/sonarqube-webhook/`
+
+---
+
+## Jenkins Tools Configuration
+
+- JDK
+- Node
+- SonarQube Scanner installations
+- Maven installations
+- Dependency-Check installations
+- Docker installations
+
+---
+
+## Jenkins System Configuration
+
+**SonarQube servers:**   
+- Name: sonar-server  
+- URL: http://10.59.10.239:9000  
+- Credentials: Add from Jenkins credentials
+
+**Extended E-mail Notification:**
+- SMTP server: smtp.gmail.com
+- SMTP Port: 465
+- Use SSL
+- Default user e-mail suffix: @gmail.com
+
+**E-mail Notification:**
+- SMTP server: smtp.gmail.com
+- Default user e-mail suffix: @gmail.com
+- Use SMTP Authentication: Yes
+- User Name: example@gmail.com
+- Password: Use credentials
+- Use TLS: Yes
+- SMTP Port: 587
+- Reply-To Address: example@gmail.com
+
+---
 
 # EKS ALB Ingress Kubernetes Setup Guide
 
-This guide covers the step-by-step installation and setup process for AWS CLI, `kubectl`, `eksctl`, and `helm`, along with instructions to create and configure an EKS cluster with AWS Load Balancer Controller.
+This guide covers the installation and setup for AWS CLI, `kubectl`, `eksctl`, and `helm`, and creating/configuring an EKS cluster with AWS Load Balancer Controller.
 
 ---
 
@@ -382,21 +409,20 @@ sudo ./aws/install
 ---
 
 ## 2. kubectl Installation
-git 
+
 Refer: [kubectl Installation Guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 
 ```bash
 sudo apt-get update
-# apt-transport-https may be a dummy package; if so, you can skip that package
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
-    
-  # If the folder `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
-# sudo mkdir -p -m 755 /etc/apt/keyrings
+
+# If the folder `/etc/apt/keyrings` does not exist:
+sudo mkdir -p -m 755 /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg # allow unprivileged APT programs to read this keyring
+sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list   # helps tools such as command-not-found to work correctly
+sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update
 sudo apt-get install -y kubectl
@@ -443,10 +469,9 @@ sudo apt-get install helm
 
 ```bash
 aws configure
-```
-```bash
 aws configure list
 ```
+
 ---
 
 ## 6. Create EKS Cluster and Nodegroup
@@ -487,7 +512,7 @@ eksctl utils associate-iam-oidc-provider --cluster my-cluster --approve
 
 ## 9. Create IAM Policy for AWS Load Balancer Controller
 
-	link for new updated policy----->	https://docs.aws.amazon.com/eks/latest/userguide/lbc-manifest.html
+New policy link: [AWS EKS LBC Policy](https://docs.aws.amazon.com/eks/latest/userguide/lbc-manifest.html)
 
 ```bash
 curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.13.3/docs/install/iam_policy.json
@@ -522,8 +547,6 @@ eksctl create iamserviceaccount \
 helm repo add eks https://aws.github.io/eks-charts
 helm repo update eks
 
-
-
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system \
   --set clusterName=my-cluster \
   --set serviceAccount.create=false \
@@ -532,26 +555,16 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n ku
   --version 1.13.3
 ```
 
-**Optional:** List available versions of the chart
-
-
-
+**Optional:** List available versions:
 ```bash
 helm search repo eks/aws-load-balancer-controller --versions
-```
-
-
-```bash
 helm list -A
 ```
 
 **Verify installation:**
-
 ```bash
 kubectl get deployment -n kube-system aws-load-balancer-controller
 ```
-
-
 
 ---
 
@@ -566,73 +579,6 @@ kubectl config set-context --current --namespace=store-ns
 
 ---
 
-
- 
-## 13. Delete EKS Cluster (Cleanup)   [stop here if you tired ]
-
-```bash
-eksctl delete cluster --name my-cluster --region ap-south-1
-```
-
-
-
-Monitor Kubernetes with Prometheus
-Install Node Exporter using Helm
-
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-
-kubectl create namespace prometheus-node-exporter
-
-helm install prometheus-node-exporter prometheus-community/prometheus-node-exporter --namespace prometheus-node-exporter
-nano /etc/prometheus/prometheus.yml
-
-  - job_name: 'k8s'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['node1Ip:9100']
-
-
-promtool check config /etc/prometheus/prometheus.yml
-
-curl -X POST http://localhost:9090/-/reload
-
-
-
-Installing Argo CD              https://www.eksworkshop.com/docs/automation/gitops/argocd/access_argocd
-
-
-helm repo add argo-cd https://argoproj.github.io/argo-helm
-helm upgrade --install argocd argo-cd/argo-cd --version "${ARGOCD_CHART_VERSION}" \
-  --namespace "argocd" --create-namespace \
-  --values ~/environment/eks-workshop/modules/automation/gitops/argocd/values.yaml \
-  --wait
-
-
-export ARGOCD_SERVER=$(kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')
-echo "ArgoCD URL: https://$ARGOCD_SERVER"
-
-The load balancer will take some time to provision. Use this command to wait until ArgoCD responds:
-
-curl --head -X GET --retry 20 --retry-all-errors --retry-delay 15 \
-  --connect-timeout 5 --max-time 10 -k \
-  https://$ARGOCD_SERVER
-
-
-For authentication, the default username is admin and the password is auto-generated. Retrieve the password with the following command:
-
-export ARGOCD_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-echo "ArgoCD admin password: $ARGOCD_PWD"
-
-
----
-
-Notes and recommendations
-- Replace `<VERSION>` and `<your-server-ip>` placeholders with the specific version or IP you intend to use.
-- Where the guide uses "latest" downloads, prefer pinned versions for production environments.
-- Check each project's official documentation pages linked above for the most up-to-date installation instructions, supported versions, and security guidance.
-
-
-
 ## 13. Delete EKS Cluster (Cleanup)
 
 ```bash
@@ -641,27 +587,69 @@ eksctl delete cluster --name my-cluster --region ap-south-1
 
 ---
 
+## Monitor Kubernetes with Prometheus
 
+**Install Node Exporter using Helm:**
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+kubectl create namespace prometheus-node-exporter
+helm install prometheus-node-exporter prometheus-community/prometheus-node-exporter --namespace prometheus-node-exporter
 ```
+
+Add to `/etc/prometheus/prometheus.yml`:
+```yaml
+  - job_name: 'k8s'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['node1Ip:9100']
+```
+
+Validate config:
+```bash
+promtool check config /etc/prometheus/prometheus.yml
+curl -X POST http://localhost:9090/-/reload
+```
+
+---
+
+## Installing Argo CD
+
+Docs: https://www.eksworkshop.com/docs/automation/gitops/argocd/access_argocd
+
+```bash
+helm repo add argo-cd https://argoproj.github.io/argo-helm
+helm upgrade --install argocd argo-cd/argo-cd --version "${ARGOCD_CHART_VERSION}" \
+  --namespace "argocd" --create-namespace \
+  --values ~/environment/eks-workshop/modules/automation/gitops/argocd/values.yaml \
+  --wait
+```
+
+```bash
+export ARGOCD_SERVER=$(kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')
+echo "ArgoCD URL: https://$ARGOCD_SERVER"
+```
+
+The load balancer will take some time to provision. Wait until ArgoCD responds:
+
+```bash
+curl --head -X GET --retry 20 --retry-all-errors --retry-delay 15 \
+  --connect-timeout 5 --max-time 10 -k \
+  https://$ARGOCD_SERVER
+```
+
+**Get ArgoCD admin password:**
+```bash
+export ARGOCD_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+echo "ArgoCD admin password: $ARGOCD_PWD"
+```
+
+---
+
+## Notes and Recommendations
+
+- Replace `<VERSION>` and `<your-server-ip>` placeholders with specific values for your setup.
+- Prefer pinned versions for production environments rather than "latest".
+- Consult each project's official documentation for the most up-to-date instructions and security guidance.
+
+---
