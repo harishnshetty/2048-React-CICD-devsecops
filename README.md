@@ -23,6 +23,20 @@ This README collects useful commands and links to install common DevOps, CI/CD a
 
 ---
 
+
+
+## Ports to Enable in Security Group
+
+| Service         | Port  |
+|-----------------|-------|
+| HTTP            | 80    |
+| HTTPS           | 443   |
+| SSH             | 22    |
+| Jenkins         | 8080  |
+| SonarQube       | 9000  |
+| Prometheus      | 9090  |
+| Node Exporter   | 9100  |
+| Grafana         | 3000  |
 ## Prerequisites
 
 This guide assumes an Ubuntu/Debian-like environment and sudo privileges.
@@ -310,20 +324,6 @@ Access: http://<your-server-ip>:3000
 
 ---
 
-## Ports to Enable in Security Group
-
-| Service         | Port  |
-|-----------------|-------|
-| SSH             | 22    |
-| SonarQube       | 9000  |
-| Prometheus      | 9090  |
-| Node Exporter   | 9100  |
-| Grafana         | 3000  |
-| HTTP            | 80    |
-| HTTPS           | 443   |
-
----
-
 ## Jenkins Credentials to Store
 
 | Purpose       | ID            | Type          | Notes                               |
@@ -372,6 +372,16 @@ Webhook example:
 - Reply-To Address: example@gmail.com
 
 ---
+
+sonarqube docker container run for analysis
+docker run -d --name sonarqube \
+  -p 9000:9000 \
+  -v sonarqube_data:/opt/sonarqube/data \
+  -v sonarqube_logs:/opt/sonarqube/logs \
+  -v sonarqube_extensions:/opt/sonarqube/extensions \
+  sonarqube:lts-community
+
+
 
 # EKS cluster setup and  ALB Ingress Kubernetes Setup Guide
 
@@ -508,6 +518,8 @@ eksctl create nodegroup \
   --nodes-max 6 \
   --node-type t3.medium
 ```
+
+
 
 ---
 
