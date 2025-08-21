@@ -3,7 +3,8 @@
 This README collects useful commands and links to install common DevOps, CI/CD, and security tooling on Ubuntu systems. It has been cleaned up, organized, and corrected for clarity. Always review commands for your environment and needs.
 
 > **Note:** Replace all `<VERSION>`, `<your-server-ip>`, `<jenkins-ip>`, `<sonar-ip-address>`, `<ACCOUNT_ID>`, and similar placeholders with your actual values.
-
+---
+# For more project reach out https://harishnshetty.github.io/projects.html
 ---
 
 ## Table of Contents
@@ -632,10 +633,11 @@ kubectl delete -f .
 ```bash
 eksctl delete cluster --name my-cluster --region ap-south-1
 ```
-
+## End up here if you tired
 ---
 
-## Monitor Kubernetes with Prometheus
+## 
+## 14. Monitor Kubernetes with Prometheus
 
 **Install Node Exporter using Helm:**
 
@@ -661,60 +663,46 @@ sudo systemctl restart  prometheus.service
 
 ---
 
-## Installing Argo CD
+## 15. Installing Argo CD on the eks cluster
 
 Docs: https://www.eksworkshop.com/docs/automation/gitops/argocd/access_argocd
+Docs: https://github.com/argoproj/argo-helm
 
+# Argocd installation via helm chart
 
+```bash
 helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
+```
 
- kubectl create namespace argocd 
- helm install argocd argo/argo-cd --namespace argocd
- kubectl get all -n argocd 
- kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}' ----> kubectl get all -n argocd
+```bash
+kubectl create namespace argocd 
+helm install argocd argo/argo-cd --namespace argocd
+kubectl get all -n argocd 
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}' 
+```
+# Another way to get the loadbalancer of the argocd alb url
 
-
-
- yum install jq -y
+```bash
+sudo apt install jq -y
 
 kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname'
-
+```
 
 Username: admin,
 
-
-
+```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-
-```bash
-helm repo add argo-cd https://argoproj.github.io/argo-helm
-helm upgrade --install argocd argo-cd/argo-cd --version "${ARGOCD_CHART_VERSION}" \
-  --namespace "argocd" --create-namespace \
-  --values ~/environment/eks-workshop/modules/automation/gitops/argocd/values.yaml \
-  --wait
 ```
-
-```bash
-export ARGOCD_SERVER=$(kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')
-echo "ArgoCD URL: https://$ARGOCD_SERVER"
-```
-
-The load balancer will take some time to provision. Wait until ArgoCD responds:
-
-```bash
-curl --head -X GET --retry 20 --retry-all-errors --retry-delay 15 \
-  --connect-timeout 5 --max-time 10 -k \
-  https://$ARGOCD_SERVER
-```
-
-**Get ArgoCD admin password:**
-```bash
-export ARGOCD_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-echo "ArgoCD admin password: $ARGOCD_PWD"
-```
-
 ---
+Password: encrypted-password
+---
+
+## 16. Delete EKS Cluster (Cleanup) finally u done a project for more conents reach out https://harishnshetty.github.io/projects.html
+
+```bash
+eksctl delete cluster --name my-cluster --region ap-south-1
+```
 
 ## Notes and Recommendations
 
