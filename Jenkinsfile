@@ -127,7 +127,7 @@ pipeline {
             steps {
                 script {
                     sh "docker rm -f 2048game || true"
-                    sh "docker run -d --name 2048game -p 80:3000 ${env.IMAGE_TAG}"
+                    sh "docker run -d --name 2048game -p 80:80 ${env.IMAGE_TAG}"
                 }
             }
         }
