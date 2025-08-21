@@ -65,7 +65,7 @@ metadata:
     alb.ingress.kubernetes.io/success-codes: '200'
 
     # SSL
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-west-2:123456789012:certificate/your-certificate-id # Replace with your ACM certificate ARN
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:970378220457:certificate/aad8e284-b7e2-4e0d-8426-ebaf59fafb1d # Replace with your ACM certificate ARN
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 spec:
   ingressClassName: alb
